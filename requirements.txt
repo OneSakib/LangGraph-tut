@@ -2,3 +2,5 @@ langgraph
 langchain
 langchain_openai
 python-dotenv
+streamlit
+langgraph-checkpoint-sqlite
