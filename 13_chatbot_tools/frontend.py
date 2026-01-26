@@ -1,6 +1,6 @@
 import streamlit as st
 from backend import chatbot, retrive_all_threads
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables.config import RunnableConfig
 from uuid import uuid4
 
@@ -87,10 +87,22 @@ if user_input:
     # st.session_state -> dict ->
     CONFIG: RunnableConfig = {'configurable': {
         'thread_id': st.session_state['thread_id']}}
+    # with st.chat_message('assistant'):
+    #     ai_message = st.write_stream(
+    #         chunk_message.content for chunk_message, meta_data in chatbot.stream({'messages': [HumanMessage(
+    #             content=user_input)]}, config=CONFIG, stream_mode="messages")
+    #     )
+    # st.session_state['message_history'].append(
+    #     {'role': 'assistant', 'content': ai_message})
     with st.chat_message('assistant'):
-        ai_message = st.write_stream(
-            chunk_message.content for chunk_message, meta_data in chatbot.stream({'messages': [HumanMessage(
-                content=user_input)]}, config=CONFIG, stream_mode="messages")
-        )
+        def ai_only_stream():
+            for chunk, metadata in chatbot.stream(
+                {"messages": [HumanMessage(content=user_input)]},
+                config=CONFIG,
+                stream_mode='messages'
+            ):
+                if isinstance(chunk, AIMessage):
+                    yield chunk.content
+        ai_message = st.write_stream(ai_only_stream())
     st.session_state['message_history'].append(
         {'role': 'assistant', 'content': ai_message})

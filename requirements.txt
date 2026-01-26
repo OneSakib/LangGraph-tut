@@ -1,6 +1,9 @@
 langgraph
 langchain
+langchain_community
 langchain_openai
 python-dotenv
 streamlit
 langgraph-checkpoint-sqlite
+duckduckgo-search
+ddgs
