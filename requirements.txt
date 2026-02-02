@@ -7,3 +7,5 @@ streamlit
 langgraph-checkpoint-sqlite
 duckduckgo-search
 ddgs
+faiss-cpu 
+pypdf

@@ -8,40 +8,34 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.tools import tool
 import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
 load_dotenv()
 
 llm = ChatOpenAI(model="gpt-5")
 
-
-def calculator(first_number: float, second_number: float, opeation: str) -> dict:
-    """
-    Perform a basic arithmatic opeation
-    it accept two peramater first_number and second_number and opeation. like (add,sub,mul,div etc.)
-    """
-    result = 0
-    if opeation == 'add':
-        result = first_number+second_number
-    elif opeation == 'sub':
-        result = first_number-second_number
-    elif opeation == 'mul':
-        result = first_number*second_number
-    elif opeation == 'div':
-        result = first_number/second_number
-    else:
-        return {'first_number': first_number, 'second_number': second_number, 'opeation': opeation, 'error': "Invalid Opeation, plesae choose correct opeation"}
-    return {'first_number': first_number, 'second_number': second_number, 'opeation': opeation, 'result': result}
-
-
-tools = [calculator]
-llm_with_tool = llm.bind_tools(tools)
-# State
+# ================== CONNSECT MCP CLIENT TO SERVER =================
+client = MultiServerMCPClient({  # type: ignore[arg-type]
+    "calculator": {
+        "transport": "stdio",
+        "command": "python",
+        "args": ["mcp_servers/main.py"]
+    },
+    "test-calculator": {
+        "transport": "http",
+        "url": "https://test-calculator.fastmcp.app/mcp"
+    }
+})
+# ================== CONNSECT MCP CLIENT TO SERVER =================
 
 
 class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def build_graph():
+async def build_graph():
+    tools = await client.get_tools()
+    llm_with_tool = llm.bind_tools(tools)
+
     async def chat_node(state: ChatState):
         messages = state['messages']
         response = await llm_with_tool.ainvoke(messages)
@@ -62,10 +56,10 @@ def build_graph():
 
 
 async def main():
-    chatbot = build_graph()
+    chatbot = await build_graph()
     # Result
-    result = await chatbot.ainvoke({'messages': [HumanMessage(content="Find the modulas of 34.")]})
-    print("Result:", result)
+    result = await chatbot.ainvoke({'messages': [HumanMessage(content="Generata a random number, rannge shold 1000 to 5000")]})
+    print("Result:", result['messages'][-1].content)
     return
 
 if __name__ == '__main__':
